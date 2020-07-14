@@ -1,0 +1,38 @@
+name: build kc tools
+on:
+  push:
+    branches:
+    - master
+jobs:
+  build:
+    name: build kc tools
+    runs-on: ubuntu-latest
+    steps:
+    - name: Install Go
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.14.x
+    - name: install gox
+      run: |
+          echo "install gox"
+          go get -u github.com/mitchellh/gox
+    - name: install ghr
+      run: |
+          echo "install ghr"
+          go get -u github.com/tcnksm/ghr
+    - uses: actions/checkout@v1
+      with:
+        fetch-depth: 1
+    - name: build kc
+      run: |
+          export TZ='Asia/Shanghai'
+          export PATH=$PATH:$(go env GOPATH)/bin
+          make build
+          pushd dist
+          sha256sum kc_darwin_amd64 > kc_darwin_amd64.sha256sum
+          sha256sum kc_linux_amd64 > kc_linux_amd64.sha256sum
+          sha256sum kc_windows_amd64.exe > kc_windows_amd64.sha256sum
+          popd
+          make pre-release
+      env:
+        GITHUB_RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
